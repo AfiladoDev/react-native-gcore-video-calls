@@ -1,6 +1,6 @@
 {
   "name": "react-native-awesome-module",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "t",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -17,6 +17,7 @@
     "!lib/typescript/example",
     "!android/build",
     "!ios/build",
+    "!MyExample/",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__"
