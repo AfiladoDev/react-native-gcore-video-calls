@@ -3,6 +3,7 @@ import {
   UIManager,
   Platform,
   ViewStyle,
+  NativeModules,
 } from 'react-native';
 
 const LINKING_ERROR =
@@ -24,3 +25,32 @@ export const AwesomeModuleView =
     : () => {
         throw new Error(LINKING_ERROR);
       };
+
+export const getConstants = () =>
+  NativeModules.GCMeetPermissions.getConstants();
+
+export interface IParamsConnection {
+  roomId: string;
+  displayName: string;
+  isAudioOn: boolean;
+  isVideoOn: boolean;
+  isModerator: boolean;
+  clientHostName: string;
+  blurSigma: number;
+}
+
+export const openConnection = (params: IParamsConnection) =>
+  NativeModules.GCMeetService.openConnection(params);
+export const closeConnection = () =>
+  NativeModules.GCMeetService.closeConnection();
+
+export const authorizeForVideo = () =>
+  NativeModules.GCMeetPermissions.authorizeForVideo();
+export const authorizeForAudio = () =>
+  NativeModules.GCMeetPermissions.authorizeForAudio();
+
+export const enableVideo = () => NativeModules.GCMeetService.enableVideo();
+export const disableVideo = () => NativeModules.GCMeetService.disableVideo();
+export const switchCamera = () => NativeModules.GCMeetService.toggleCamera();
+export const enableAudio = () => NativeModules.GCMeetService.enableAudio();
+export const disableAudio = () => NativeModules.GCMeetService.disableAudio();
