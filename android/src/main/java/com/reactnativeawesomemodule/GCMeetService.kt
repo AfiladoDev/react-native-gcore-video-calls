@@ -1,12 +1,17 @@
 package com.reactnativeawesomemodule
 
 import android.app.Application
+import android.content.Context
+import android.media.AudioManager
 import android.util.Log
+
 import com.facebook.react.bridge.*
 import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
 import gcore.videocalls.meet.GCoreMeet
 
 class GCMeetService(val reactContext: ReactApplicationContext, private val application: Application) : ReactContextBaseJavaModule(reactContext) {
+
+  lateinit var audioManager: AudioManager
 
   override fun getName(): String {
     return "GCMeetService";
@@ -29,6 +34,8 @@ class GCMeetService(val reactContext: ReactApplicationContext, private val appli
 
       GCoreMeet.instance.roomManager.options.startWithCam = roomOptions.getBoolean("isVideoOn")
       GCoreMeet.instance.roomManager.options.startWithMic = roomOptions.getBoolean("isAudioOn")
+      audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+      audioManager.isSpeakerphoneOn = true
 
       if(GCoreMeet.instance.roomManager.isClosed())
         GCoreMeet.instance.roomManager.join()

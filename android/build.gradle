@@ -155,6 +155,7 @@ dependencies {
   implementation "com.jakewharton.timber:timber:$TIMBER_VERSION"
   implementation("io.reactivex.rxjava2:rxjava:$RX_JAVA_VERSION")
   implementation("io.reactivex.rxjava2:rxandroid:$RX_VERSION")
+  implementation "org.protoojs.droid:protoo-client:$PROTO_VERSION"
   implementation("com.squareup.okhttp3:okhttp:$OKHTTP_VERSION")
   implementation("com.squareup.okhttp3:logging-interceptor:$OKHTTP_VERSION")
 }
