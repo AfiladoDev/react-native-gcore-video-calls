@@ -26,6 +26,7 @@ class GCMeetService(val reactContext: ReactApplicationContext, private val appli
   @ReactMethod
   fun openConnection(roomOptions: ReadableMap) {
     runOnUiThread {
+      GCoreMeet.instance.roomManager.peerId = roomOptions.getString("peerId") ?: ""
       GCoreMeet.instance.roomManager.roomId = roomOptions.getString("roomId") ?: ""
       GCoreMeet.instance.roomManager.displayName = roomOptions.getString("displayName") ?: ""
       GCoreMeet.instance.roomManager.isModer = roomOptions.getBoolean("isModerator")
