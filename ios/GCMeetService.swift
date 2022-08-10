@@ -227,7 +227,7 @@ extension GCMeetService: RoomListener {
 
     func roomClient(roomClient: GCoreRoomClient, peerClosed: String) {
         // delegate?.peerClosed(peerClosed)
-        self.sendEvent(withName: "onPeerClosed", body: "onPeerClosed")
+        self.sendEvent(withName: "onPeerClosed", body: peerClosed)
         print("RoomListener: peerClosed:", peerClosed)
     }
 
