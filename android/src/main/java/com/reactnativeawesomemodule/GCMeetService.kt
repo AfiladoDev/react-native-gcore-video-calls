@@ -3,6 +3,8 @@ package com.reactnativeawesomemodule
 import android.app.Application
 import android.content.Context
 import android.media.AudioManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 
 import com.facebook.react.bridge.*
@@ -13,6 +15,7 @@ import gcore.videocalls.meet.GCoreMeet
 class GCMeetService(val reactContext: ReactApplicationContext, private val application: Application) : ReactContextBaseJavaModule(reactContext) {
 
   lateinit var audioManager: AudioManager
+  var lastPeer: String? = null
 
   override fun getName(): String {
     return "GCMeetService";
@@ -103,14 +106,17 @@ class GCMeetService(val reactContext: ReactApplicationContext, private val appli
   fun addListener(eventName: String) {
     // Set up any upstream listeners or background tasks as necessary
     Log.d("qwe", eventName)
-    GCoreMeet.instance.getPeers().observeForever { peers ->
-      peers?.allPeers?.let {
-        if(it.isNotEmpty()){
-          Log.d("qwe", eventName + it[0].id)
-          sendEvent(reactContext, "onPeerHandle", it[0].id)
-        } else {
-          Log.d("qwe", eventName + it[0].id)
-          sendEvent(reactContext, "onPeerClosed", it[0].id)
+    Handler(Looper.getMainLooper()).post {
+      GCoreMeet.instance.getPeers().observeForever { peers ->
+        peers?.allPeers?.let {
+          if(it.isNotEmpty()){
+            Log.d("qwe", eventName + " " + it[0].id)
+            lastPeer = it[0].id
+            sendEvent(reactContext, "onPeerHandle", it[0].id)
+          } else if (it.isEmpty() && lastPeer != null) {
+            Log.d("qwe", eventName + " " + lastPeer)
+            sendEvent(reactContext, "onPeerClosed", lastPeer)
+          }
         }
       }
     }
