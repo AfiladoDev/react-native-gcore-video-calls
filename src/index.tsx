@@ -1,10 +1,12 @@
+import type { PropsWithChildren } from 'react';
 import {
   requireNativeComponent,
+  StyleProp,
   UIManager,
   Platform,
   ViewStyle,
   NativeModules,
-  NativeEventEmitter
+  NativeEventEmitter,
 } from 'react-native';
 
 const LINKING_ERROR =
@@ -45,10 +47,10 @@ export const openConnection = (params: IParamsConnection) =>
 export const closeConnection = () =>
   NativeModules.GCMeetService.closeConnection();
 
-export const authorizeForVideo = () =>
-  NativeModules.GCMeetPermissions.authorizeForVideo();
-export const authorizeForAudio = () =>
-  NativeModules.GCMeetPermissions.authorizeForAudio();
+export const authorizeForVideo = async () =>
+  await NativeModules.GCMeetPermissions.authorizeForVideo();
+export const authorizeForAudio = async () =>
+  await NativeModules.GCMeetPermissions.authorizeForAudio();
 
 export const enableVideo = () => NativeModules.GCMeetService.enableVideo();
 export const disableVideo = () => NativeModules.GCMeetService.disableVideo();
@@ -56,10 +58,20 @@ export const switchCamera = () => NativeModules.GCMeetService.toggleCamera();
 export const enableAudio = () => NativeModules.GCMeetService.enableAudio();
 export const disableAudio = () => NativeModules.GCMeetService.disableAudio();
 
-export const PeersListener = (handler: (event: any) => void) => {
+export const PeersListener = (
+  eventName: string,
+  handler: (event: any) => void
+) => {
   const peersEventEmitter = new NativeEventEmitter(
     NativeModules.RNEventEmitter
   );
-  const peersEventListener = peersEventEmitter.addListener('onPeers', handler);
+  const peersEventListener = peersEventEmitter.addListener(eventName, handler);
   return peersEventListener.remove;
 };
+
+interface ViewProps extends PropsWithChildren<any> {
+  style: StyleProp<ViewStyle>;
+}
+
+export const GCRemoteView = requireNativeComponent<ViewProps>('GCRemoteView');
+export const GCLocalView = requireNativeComponent<ViewProps>('GCLocalView');
