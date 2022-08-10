@@ -4,6 +4,7 @@ import {
   Platform,
   ViewStyle,
   NativeModules,
+  NativeEventEmitter
 } from 'react-native';
 
 const LINKING_ERROR =
@@ -54,3 +55,11 @@ export const disableVideo = () => NativeModules.GCMeetService.disableVideo();
 export const switchCamera = () => NativeModules.GCMeetService.toggleCamera();
 export const enableAudio = () => NativeModules.GCMeetService.enableAudio();
 export const disableAudio = () => NativeModules.GCMeetService.disableAudio();
+
+export const PeersListener = (handler: (event: any) => void) => {
+  const peersEventEmitter = new NativeEventEmitter(
+    NativeModules.RNEventEmitter
+  );
+  const peersEventListener = peersEventEmitter.addListener('onPeers', handler);
+  return peersEventListener.remove;
+};
