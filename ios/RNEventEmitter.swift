@@ -9,6 +9,6 @@ open class RNEventEmitter: RCTEventEmitter {
   }
 
   open override func supportedEvents() -> [String] {
-    ["onPeers"]      // etc.
+    ["onHandlePeer","onPeerClosed"]      // etc.
   }
 }
