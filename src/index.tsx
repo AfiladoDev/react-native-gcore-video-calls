@@ -62,11 +62,14 @@ export const PeersListener = (
   eventName: string,
   handler: (event: any) => void
 ) => {
-  const peersEventEmitter = new NativeEventEmitter(
-    NativeModules.RNEventEmitter
+  const GCMeetServiceEventEmitter = new NativeEventEmitter(
+    NativeModules.GCMeetService
   );
-  const peersEventListener = peersEventEmitter.addListener(eventName, handler);
-  return peersEventListener.remove;
+  const GCMeetServiceEventListener = GCMeetServiceEventEmitter.addListener(
+    eventName,
+    handler
+  );
+  return GCMeetServiceEventListener.remove;
 };
 
 interface ViewProps extends PropsWithChildren<any> {
