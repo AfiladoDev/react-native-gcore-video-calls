@@ -34,6 +34,7 @@ class GCMeetService: RCTEventEmitter {
         let parameters = MeetRoomParametrs(
             roomId: roomOptions["roomId"] as! String,
             displayName: roomOptions["displayName"] as! String,
+            peerId: roomOptions["peerId"] as? String,
             clientHostName: roomOptions["clientHostName"] as? String,
             isModerator: roomOptions["isModerator"] as! Bool
         )
