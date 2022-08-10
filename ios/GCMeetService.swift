@@ -216,7 +216,7 @@ extension GCMeetService: RoomListener {
 
     func roomClient(roomClient: GCoreRoomClient, handlePeer: PeerObject) {
         // delegate?.handledPeer(handlePeer)
-        self.sendEvent(withName: "onHandlePeer", body: handlePeer.id)
+        self.sendEvent(withName: "onPeerHandle", body: handlePeer.id)
         print("RoomListener: handlePeer:", handlePeer.displayName ?? "name unknown")
     }
 
