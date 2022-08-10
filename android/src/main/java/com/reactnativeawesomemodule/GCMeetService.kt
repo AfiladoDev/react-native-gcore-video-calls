@@ -7,6 +7,7 @@ import android.util.Log
 
 import com.facebook.react.bridge.*
 import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import gcore.videocalls.meet.GCoreMeet
 
 class GCMeetService(val reactContext: ReactApplicationContext, private val application: Application) : ReactContextBaseJavaModule(reactContext) {
@@ -90,5 +91,33 @@ class GCMeetService(val reactContext: ReactApplicationContext, private val appli
   fun toggleCamera() {
     GCoreMeet.instance.roomManager.changeCam()
     Log.d("qwe", "toggle cam")
+  }
+
+  private fun sendEvent(reactContext: ReactContext, eventName: String, params: String?) {
+    reactContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit(eventName, params)
+  }
+
+  @ReactMethod
+  fun addListener(eventName: String) {
+    // Set up any upstream listeners or background tasks as necessary
+    Log.d("qwe", eventName)
+    GCoreMeet.instance.getPeers().observeForever { peers ->
+      peers?.allPeers?.let {
+        if(it.isNotEmpty()){
+          Log.d("qwe", eventName + it[0].id)
+          sendEvent(reactContext, "onPeerHandle", it[0].id)
+        } else {
+          Log.d("qwe", eventName + it[0].id)
+          sendEvent(reactContext, "onPeerClosed", it[0].id)
+        }
+      }
+    }
+  }
+
+  @ReactMethod
+  fun removeListeners(count: Int) {
+    // Remove upstream listeners, stop unnecessary background tasks
   }
 }
