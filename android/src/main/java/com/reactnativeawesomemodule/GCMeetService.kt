@@ -3,97 +3,122 @@ package com.reactnativeawesomemodule
 import android.app.Application
 import android.content.Context
 import android.media.AudioManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
-
-import com.facebook.react.bridge.*
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
-import com.facebook.react.modules.core.DeviceEventManagerModule
 import gcore.videocalls.meet.GCoreMeet
+import gcore.videocalls.meet.localuser.LocalUserInfo
+import gcore.videocalls.meet.model.DEFAULT_LENGTH_RANDOM_STRING
+import gcore.videocalls.meet.model.UserRole
+import gcore.videocalls.meet.network.ConnectionState
+import gcore.videocalls.meet.room.RoomParams
+import gcore.videocalls.meet.utils.Utils
 
-class GCMeetService(val reactContext: ReactApplicationContext, private val application: Application) : ReactContextBaseJavaModule(reactContext) {
 
-  lateinit var audioManager: AudioManager
-  var lastPeer: String? = null
+class GCMeetService(
+  private val reactContext: ReactApplicationContext,
+  private val application: Application
+) : ReactContextBaseJavaModule(reactContext) {
+
+  private var enableCamOnConnect = false
+  private var enableMicOnConnect = false
+  private var lastPeer: String? = null
 
   override fun getName(): String {
-    return "GCMeetService";
+    return "GCMeetService"
   }
 
   init {
     runOnUiThread {
-      GCoreMeet.instance.init(application, null, false)
+      GCoreMeet.instance.init(application)
     }
   }
 
   @ReactMethod
-  fun openConnection(roomOptions: ReadableMap) {
+  fun openConnection(options: ReadableMap) {
     runOnUiThread {
-      GCoreMeet.instance.roomManager.peerId = roomOptions.getString("peerId") ?: ""
-      GCoreMeet.instance.roomManager.roomId = roomOptions.getString("roomId") ?: ""
-      GCoreMeet.instance.roomManager.displayName = roomOptions.getString("displayName") ?: ""
-      GCoreMeet.instance.roomManager.isModer = roomOptions.getBoolean("isModerator")
 
-      GCoreMeet.instance.startConnection(reactContext)
+      val userRole = when (options.getString("role") ?: "") {
+        "common" -> UserRole.COMMON
+        "moderator" -> UserRole.MODERATOR
+        else -> UserRole.UNKNOWN
+      }
+      val userInfo = LocalUserInfo(
+        displayName = options.getString("displayName") ?: "User${Utils.getRandomString(3)}",
+        role = userRole,
+        userId = options.getString("userId") ?: Utils.getRandomString(DEFAULT_LENGTH_RANDOM_STRING)
+      )
 
-      GCoreMeet.instance.roomManager.options.startWithCam = roomOptions.getBoolean("isVideoOn")
-      GCoreMeet.instance.roomManager.options.startWithMic = roomOptions.getBoolean("isAudioOn")
-      audioManager = reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+      val roomParams = RoomParams(
+        roomId = options.getString("roomId") ?: "",
+        hostName = options.getString("clientHostName") ?: "",
+//        startWithCam = options.getBoolean("isVideoOn"),
+//        startWithMic = options.getBoolean("isAudioOn")
+      )
+
+      enableCamOnConnect = options.getBoolean("isVideoOn")
+      enableMicOnConnect = options.getBoolean("isAudioOn")
+
+      GCoreMeet.instance.setConnectionParams(userInfo, roomParams)
+      GCoreMeet.instance.connect(reactContext)
+
+      val audioManager: AudioManager =
+        reactContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
       audioManager.isSpeakerphoneOn = true
 
-      if(GCoreMeet.instance.roomManager.isClosed())
-        GCoreMeet.instance.roomManager.join()
+      if (enableCamOnConnect || enableMicOnConnect) {
+        GCoreMeet.instance.room.provider.roomInfo.observeForever {
+          if (it.connectionState == ConnectionState.CONNECTED) {
+            if (enableCamOnConnect) {
+              enableVideo()
+              enableCamOnConnect = false
+              Log.d("Local", "enableVideo")
+            }
+            if (enableMicOnConnect) {
+              enableAudio()
+              enableMicOnConnect = false
+            }
+          }
+        }
+      }
+
     }
   }
 
   @ReactMethod
   fun closeConnection() {
     runOnUiThread {
-      GCoreMeet.instance.roomManager.destroyRoom()
+      GCoreMeet.instance.close()
     }
   }
 
   @ReactMethod
   fun enableVideo() {
-    GCoreMeet.instance.roomManager.enableCam()
+    GCoreMeet.instance.localUser?.toggleCam(true)
   }
 
   @ReactMethod
   fun disableVideo() {
-    GCoreMeet.instance.roomManager.disableCam()
-  }
-
-  @ReactMethod
-  fun toggleVideo() {
-    GCoreMeet.instance.roomManager.disableEnableCam()
+    GCoreMeet.instance.localUser?.toggleCam(false)
   }
 
   @ReactMethod
   fun enableAudio() {
-    if(!GCoreMeet.instance.roomManager.isMicEnabled())
-      GCoreMeet.instance.roomManager.enableMic()
-
-    GCoreMeet.instance.roomManager.unmuteMic()
+    GCoreMeet.instance.localUser?.toggleMic(true)
   }
 
   @ReactMethod
   fun disableAudio() {
-    GCoreMeet.instance.roomManager.muteMic()
+    GCoreMeet.instance.localUser?.toggleMic(false)
   }
 
   @ReactMethod
-  fun toggleAudio() {
-    if(!GCoreMeet.instance.roomManager.isMicEnabled())
-      GCoreMeet.instance.roomManager.enableMic()
-
-    GCoreMeet.instance.roomManager.muteUnMuteMic()
-  }
-
-  @ReactMethod
-  fun toggleCamera() {
-    GCoreMeet.instance.roomManager.changeCam()
-    Log.d("qwe", "toggle cam")
+  fun flipCamera() {
+    GCoreMeet.instance.localUser?.flipCam()
   }
 
   private fun sendEvent(reactContext: ReactContext, eventName: String, params: String?) {
@@ -107,12 +132,26 @@ class GCMeetService(val reactContext: ReactApplicationContext, private val appli
     // Set up any upstream listeners or background tasks as necessary
     Log.d("qwe", eventName)
     Handler(Looper.getMainLooper()).post {
-      GCoreMeet.instance.getPeers().observeForever { peers ->
-        peers?.allPeers?.let {
-          if(it.isNotEmpty()){
-            Log.d("qwe", eventName + " " + it[0].id)
-            lastPeer = it[0].id
-            sendEvent(reactContext, "onPeerHandle", it[0].id)
+//      GCoreMeet.instance.getPeers().observeForever { peers ->
+//        peers?.allPeers?.let {
+//          if(it.isNotEmpty()){
+//            Log.d("qwe", eventName + " " + it[0].id)
+//            lastPeer = it[0].id
+//            sendEvent(reactContext, "onPeerHandle", it[0].id)
+//          } else if (it.isEmpty() && lastPeer != null) {
+//            Log.d("qwe", eventName + " " + lastPeer)
+//            sendEvent(reactContext, "onPeerClosed", lastPeer)
+//          }
+//        }
+//      }
+      GCoreMeet.instance.room.provider.remoteUsers.observeForever { remoteUsers ->
+        remoteUsers?.list?.let { users ->
+          if (users.isNotEmpty()) {
+//            Log.d("ReactRemoteViewManager", "connect remote user: ${users[0].id}")
+//            view.connect(users[0].id)
+            Log.d("qwe", eventName + " " + users[0].id)
+            lastPeer = users[0].id
+            sendEvent(reactContext, "onPeerHandle", users[0].id)
           } else if (it.isEmpty() && lastPeer != null) {
             Log.d("qwe", eventName + " " + lastPeer)
             sendEvent(reactContext, "onPeerClosed", lastPeer)
