@@ -39,7 +39,9 @@ export interface IParamsConnection {
   isVideoOn: boolean;
   isModerator: boolean;
   clientHostName: string;
-  blurSigma: number;
+  role: 'common' | 'moderator';
+  userId: string; // Deprecated
+  blurSigma: number; // Deprecated
 }
 
 export const openConnection = (params: IParamsConnection) =>
@@ -54,7 +56,7 @@ export const authorizeForAudio = async () =>
 
 export const enableVideo = () => NativeModules.GCMeetService.enableVideo();
 export const disableVideo = () => NativeModules.GCMeetService.disableVideo();
-export const switchCamera = () => NativeModules.GCMeetService.toggleCamera();
+export const switchCamera = () => NativeModules.GCMeetService.flipCamera();
 export const enableAudio = () => NativeModules.GCMeetService.enableAudio();
 export const disableAudio = () => NativeModules.GCMeetService.disableAudio();
 
