@@ -16,7 +16,6 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.dependency "React-Core"
-  s.dependency 'mediasoup_ios_client', '1.5.3'
-  s.dependency 'GCoreVideoCallsSDK', '2.5.1-xcframework'
-
+  s.dependency "GCoreVideoCallsSDK", "2.6.0"
+  s.dependency "mediasoup_ios_client", "1.5.3"
 end
