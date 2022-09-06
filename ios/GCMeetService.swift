@@ -42,6 +42,7 @@ class GCMeetService: RCTEventEmitter {
 
         let localUserParams = GCoreLocalUserParams(
             name: options["displayName"] as! String,
+            id: options["userId"] as? String,
             role: userRole)
 
         let roomParams = GCoreRoomParams(
