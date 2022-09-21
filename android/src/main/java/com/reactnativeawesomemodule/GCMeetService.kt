@@ -103,27 +103,13 @@ class GCMeetService(
     // Set up any upstream listeners or background tasks as necessary
     Log.d("qwe", eventName)
     Handler(Looper.getMainLooper()).post {
-//      GCoreMeet.instance.getPeers().observeForever { peers ->
-//        peers?.allPeers?.let {
-//          if(it.isNotEmpty()){
-//            Log.d("qwe", eventName + " " + it[0].id)
-//            lastPeer = it[0].id
-//            sendEvent(reactContext, "onPeerHandle", it[0].id)
-//          } else if (it.isEmpty() && lastPeer != null) {
-//            Log.d("qwe", eventName + " " + lastPeer)
-//            sendEvent(reactContext, "onPeerClosed", lastPeer)
-//          }
-//        }
-//      }
-      GCoreMeet.instance.room.provider.remoteUsers.observeForever { remoteUsers ->
+      GCoreMeet.instance.roomState.remoteUsers.observeForever { remoteUsers ->
         remoteUsers?.list?.let { users ->
           if (users.isNotEmpty()) {
-//            Log.d("ReactRemoteViewManager", "connect remote user: ${users[0].id}")
-//            view.connect(users[0].id)
             Log.d("qwe", eventName + " " + users[0].id)
             lastPeer = users[0].id
             sendEvent(reactContext, "onPeerHandle", users[0].id)
-          } else if (it.isEmpty() && lastPeer != null) {
+          } else if (users.isEmpty() && lastPeer != null) {
             Log.d("qwe", eventName + " " + lastPeer)
             sendEvent(reactContext, "onPeerClosed", lastPeer)
           }
