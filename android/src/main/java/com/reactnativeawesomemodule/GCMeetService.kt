@@ -1,14 +1,12 @@
 package com.reactnativeawesomemodule
 
 import android.app.Application
-import android.content.Context
-import android.media.AudioManager
-import android.media.AudioManager.*
-import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
-import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.ReadableMap
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import com.facebook.react.bridge.*
 import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
+import com.facebook.react.modules.core.DeviceEventManagerModule
 import gcore.videocalls.meet.GCoreMeet
 import gcore.videocalls.meet.localuser.LocalUserInfo
 import gcore.videocalls.meet.model.DEFAULT_LENGTH_RANDOM_STRING
