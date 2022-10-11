@@ -134,6 +134,7 @@ class GCMeetService(
           } else if (it.isEmpty() && lastPeer != null) {
             Log.d("qwe", eventName + " " + lastPeer)
             sendEvent(reactContext, "onPeerClosed", lastPeer)
+            lastPeer = null
           }
         }
       }
