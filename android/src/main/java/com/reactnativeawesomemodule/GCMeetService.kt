@@ -13,7 +13,11 @@ import gcore.videocalls.meet.model.DEFAULT_LENGTH_RANDOM_STRING
 import gcore.videocalls.meet.model.UserRole
 import gcore.videocalls.meet.room.RoomParams
 import gcore.videocalls.meet.utils.Utils
-
+import gcore.videocalls.meet.network.client.VideoFrameListener
+import gcore.videocalls.meet.utils.image.VideoFrameConverter
+import gcore.videocalls.meet.utils.image.VideoFrameFaceDetector
+import gcore.videocalls.meet.utils.image.VideoFrameSegmenter
+import org.webrtc.VideoFrame
 
 class GCMeetService(
   private val application: Application,
@@ -22,10 +26,40 @@ class GCMeetService(
 
   private var lastPeer: String? = null
 
+    private val frameConverter = VideoFrameConverter(application)
+    private val videoFrameFaceDetector = VideoFrameFaceDetector().also {
+      it.faceDetectingFrameInterval = 10
+    }
+
+    private val videoFrameListener = object : VideoFrameListener {
+
+      private val planeLock = Any()
+
+      override fun onFrameCaptured(frame: VideoFrame, sink: (frame: VideoFrame) -> Unit) {
+        synchronized(planeLock) {
+          frame.buffer.retain()
+          val inputImage = frameConverter.frameToInputImage(frame, frame.rotation)
+          val hasFace = videoFrameFaceDetector.hasFace(inputImage)
+
+          val blurredFrame = if (hasFace) {
+            frame
+          } else {
+            frameConverter.blurFrame(frame, 40)
+          }
+
+          sink.invoke(blurredFrame)
+          frame.buffer.release()
+        }
+      }
+    }
+
+
   init {
     runOnUiThread {
       GCoreMeet.instance.init(application)
     }
+
+    GCoreMeet.instance.videoFrameListener = videoFrameListener
   }
 
   @ReactMethod

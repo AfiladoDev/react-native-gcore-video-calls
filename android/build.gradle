@@ -141,7 +141,15 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.30"
   implementation "androidx.core:core-ktx:$CORE_KTX_VERSION"
 
-  implementation project(":GCoreVideoCallsSDK")
+  implementation "io.github.crow-misia.libmediasoup-android:libmediasoup-android:0.11.0"
+  implementation "io.github.crow-misia.libyuv:libyuv-android:0.24.0"
+
+  implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+
+  implementation 'com.google.mlkit:face-detection:16.1.5'
+  implementation 'com.google.mlkit:segmentation-selfie:16.0.0-beta4'
+
+  implementation project(":SDK")
 
   implementation "androidx.lifecycle:lifecycle-extensions:$LIFECYCLE_VERSION"
   implementation "com.google.dagger:dagger:$DAGGER_VERSION"
