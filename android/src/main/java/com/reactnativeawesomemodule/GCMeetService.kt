@@ -20,8 +20,8 @@ import gcore.videocalls.meet.utils.image.VideoFrameSegmenter
 import org.webrtc.VideoFrame
 
 class GCMeetService(
-  private val application: Application,
   private val reactContext: ReactApplicationContext,
+  private val application: Application,
 ) : ReactContextBaseJavaModule(reactContext) {
 
   private var lastPeer: String? = null
