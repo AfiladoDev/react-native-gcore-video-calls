@@ -1,18 +1,17 @@
 package com.reactnativeawesomemodule
 
-import android.util.Log
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
-import gcore.videocalls.meet.GCoreMeet
-import gcore.videocalls.meet.logger.LLog
-import gcore.videocalls.meet.ui.view.remoteuser.RemoteUserVideoView
+import world.edgecenter.videocalls.ECSession
+import world.edgecenter.videocalls.logger.LLog
+import world.edgecenter.videocalls.ui.view.remoteuser.RemoteUserVideoView
 
-class GCRemoteViewManager(var mCallerContext: ReactApplicationContext) :
+class ECRemoteViewManager(var mCallerContext: ReactApplicationContext) :
   SimpleViewManager<RemoteUserVideoView>() {
 
   override fun getName(): String {
-    return "GCRemoteView"
+    return "ECRemoteView"
   }
 
   override fun onDropViewInstance(view: RemoteUserVideoView) {
@@ -23,10 +22,10 @@ class GCRemoteViewManager(var mCallerContext: ReactApplicationContext) :
   override fun createViewInstance(reactContext: ThemedReactContext): RemoteUserVideoView {
     val view = RemoteUserVideoView(reactContext.baseContext)
 
-    GCoreMeet.instance.roomState.remoteUsers.observeForever { remoteUsers ->
+    ECSession.instance.roomState.remoteUsers.observeForever { remoteUsers ->
       remoteUsers?.list?.let { users ->
         if (users.isNotEmpty()) {
-          LLog.d("ReactRemoteViewManager", "connect remote user: ${users[0].id}")
+          LLog.d("ReactRemoteViewManager", "connected remote user: ${users[0].id}")
           view.connect(users[0].id)
         }
       }

@@ -4,7 +4,7 @@ pluginManagement {
     google()
   }
 }
-rootProject.name = "GCAndroidNativeModule"
+rootProject.name = "ECAndroidNativeModule"
 
 include ':SDK'
-project(':SDK').projectDir = new File(rootDir, 'GCoreVideoCallsSDK/')
+project(':SDK').projectDir = new File(rootDir, 'ECVideoCallsSDK/')

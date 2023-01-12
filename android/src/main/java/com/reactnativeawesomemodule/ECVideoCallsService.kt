@@ -1,97 +1,93 @@
 package com.reactnativeawesomemodule
 
 import android.app.Application
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import com.facebook.react.bridge.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.UiThreadUtil.runOnUiThread
 import com.facebook.react.modules.core.DeviceEventManagerModule
-import gcore.videocalls.meet.GCoreMeet
-import gcore.videocalls.meet.localuser.LocalUserInfo
-import gcore.videocalls.meet.model.DEFAULT_LENGTH_RANDOM_STRING
-import gcore.videocalls.meet.model.UserRole
-import gcore.videocalls.meet.room.RoomParams
-import gcore.videocalls.meet.utils.Utils
-import gcore.videocalls.meet.network.client.VideoFrameListener
-import gcore.videocalls.meet.utils.image.VideoFrameConverter
-import gcore.videocalls.meet.utils.image.VideoFrameFaceDetector
-import gcore.videocalls.meet.utils.image.VideoFrameSegmenter
 import org.webrtc.VideoFrame
+import world.edgecenter.videocalls.ECSession
+import world.edgecenter.videocalls.localuser.LocalUserInfo
+import world.edgecenter.videocalls.model.DEFAULT_LENGTH_RANDOM_STRING
+import world.edgecenter.videocalls.model.UserRole
+import world.edgecenter.videocalls.network.client.VideoFrameListener
+import world.edgecenter.videocalls.room.RoomParams
+import world.edgecenter.videocalls.utils.Utils
+import world.edgecenter.videocalls.utils.image.VideoFrameConverter
+import world.edgecenter.videocalls.utils.image.VideoFrameFaceDetector
 
-class GCMeetService(
-  private val reactContext: ReactApplicationContext,
+
+class ECVideoCallsService(
+  reactContext: ReactApplicationContext,
   private val application: Application,
 ) : ReactContextBaseJavaModule(reactContext) {
 
   private var lastPeer: String? = null
 
-    private val frameConverter = VideoFrameConverter(application)
-    private val videoFrameFaceDetector = VideoFrameFaceDetector().also {
-      it.faceDetectingFrameInterval = 10
-    }
+  private val frameConverter = VideoFrameConverter()
+  private val videoFrameFaceDetector = VideoFrameFaceDetector().also {
+    it.faceDetectingFrameInterval = 10
+  }
 
-    private val videoFrameListener = object : VideoFrameListener {
+  private val videoFrameListener = object : VideoFrameListener {
 
-      private val planeLock = Any()
+    override fun onFrameCaptured(frame: VideoFrame, sink: (frame: VideoFrame) -> Unit) {
+        val inputImage = frameConverter.frameToInputImage(frame, frame.rotation)
+        val hasFace = videoFrameFaceDetector.hasFace(inputImage)
 
-      override fun onFrameCaptured(frame: VideoFrame, sink: (frame: VideoFrame) -> Unit) {
-        synchronized(planeLock) {
-          frame.buffer.retain()
-          val inputImage = frameConverter.frameToInputImage(frame, frame.rotation)
-          val hasFace = videoFrameFaceDetector.hasFace(inputImage)
-
-          val blurredFrame = if (hasFace) {
-            frame
-          } else {
-            frameConverter.blurFrame(frame, 40)
-          }
-
-          sink.invoke(blurredFrame)
-          frame.buffer.release()
+        val blurredFrame = if (hasFace) {
+          frame
+        } else {
+          frameConverter.blurFrame(frame, 40)
         }
-      }
-    }
 
+        sink.invoke(blurredFrame)
+    }
+  }
 
   init {
+
     runOnUiThread {
-      GCoreMeet.instance.init(application)
+      ECSession.instance.init(application)
     }
 
-    GCoreMeet.instance.videoFrameListener = videoFrameListener
+    ECSession.instance.videoFrameListener = videoFrameListener
   }
 
   @ReactMethod
   fun closeConnection() {
     runOnUiThread {
-      GCoreMeet.instance.close()
+      ECSession.instance.close()
     }
   }
 
   @ReactMethod
   fun disableAudio() {
-    GCoreMeet.instance.localUser?.toggleMic(false)
+    ECSession.instance.localUser?.toggleMic(false)
   }
 
   @ReactMethod
   fun disableVideo() {
-    GCoreMeet.instance.localUser?.toggleCam(false)
+    ECSession.instance.localUser?.toggleCam(false)
   }
 
   @ReactMethod
   fun enableAudio() {
-    GCoreMeet.instance.localUser?.toggleMic(true)
+    ECSession.instance.localUser?.toggleMic(true)
   }
 
   @ReactMethod
   fun enableVideo() {
-    GCoreMeet.instance.localUser?.toggleCam(true)
+    ECSession.instance.localUser?.toggleCam(true)
   }
 
   @ReactMethod
   fun flipCamera() {
-    GCoreMeet.instance.localUser?.flipCam()
+    ECSession.instance.localUser?.flipCam()
   }
 
   @ReactMethod
@@ -101,6 +97,7 @@ class GCMeetService(
       val userRole = when (options.getString("role") ?: "") {
         "common" -> UserRole.COMMON
         "moderator" -> UserRole.MODERATOR
+        "participant" -> UserRole.PARTICIPANT
         else -> UserRole.UNKNOWN
       }
       val userInfo = LocalUserInfo(
@@ -113,16 +110,17 @@ class GCMeetService(
         roomId = options.getString("roomId") ?: "",
         hostName = options.getString("clientHostName") ?: "",
         startWithCam = options.getBoolean("isVideoOn"),
-        startWithMic = options.getBoolean("isAudioOn")
+        startWithMic = options.getBoolean("isAudioOn"),
+        isWebinar = false
       )
 
-      GCoreMeet.instance.setConnectionParams(userInfo, roomParams)
-      GCoreMeet.instance.connect()
+      ECSession.instance.setConnectionParams(userInfo, roomParams)
+      ECSession.instance.connect()
     }
   }
 
   override fun getName(): String {
-    return "GCMeetService"
+      return "ECVideoCallsService"
   }
   private fun sendEvent(reactContext: ReactContext, eventName: String, params: String?) {
     reactContext

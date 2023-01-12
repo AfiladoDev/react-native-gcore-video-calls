@@ -30,7 +30,7 @@ export const AwesomeModuleView =
       };
 
 export const getConstants = () =>
-  NativeModules.GCMeetPermissions.getConstants();
+  NativeModules.ECVideoCallsPermissions.getConstants();
 
 export interface IParamsConnection {
   roomId: string;
@@ -45,38 +45,38 @@ export interface IParamsConnection {
 }
 
 export const openConnection = (params: IParamsConnection) =>
-  NativeModules.GCMeetService.openConnection(params);
+  NativeModules.ECVideoCallsService.openConnection(params);
 export const closeConnection = () =>
-  NativeModules.GCMeetService.closeConnection();
+  NativeModules.ECVideoCallsService.closeConnection();
 
 export const authorizeForVideo = async () =>
-  await NativeModules.GCMeetPermissions.authorizeForVideo();
+  await NativeModules.ECVideoCallsPermissions.authorizeForVideo();
 export const authorizeForAudio = async () =>
-  await NativeModules.GCMeetPermissions.authorizeForAudio();
+  await NativeModules.ECVideoCallsPermissions.authorizeForAudio();
 
-export const enableVideo = () => NativeModules.GCMeetService.enableVideo();
-export const disableVideo = () => NativeModules.GCMeetService.disableVideo();
-export const switchCamera = () => NativeModules.GCMeetService.flipCamera();
-export const enableAudio = () => NativeModules.GCMeetService.enableAudio();
-export const disableAudio = () => NativeModules.GCMeetService.disableAudio();
+export const enableVideo = () => NativeModules.ECVideoCallsService.enableVideo();
+export const disableVideo = () => NativeModules.ECVideoCallsService.disableVideo();
+export const switchCamera = () => NativeModules.ECVideoCallsService.flipCamera();
+export const enableAudio = () => NativeModules.ECVideoCallsService.enableAudio();
+export const disableAudio = () => NativeModules.ECVideoCallsService.disableAudio();
 
 export const PeersListener = (
   eventName: string,
   handler: (event: any) => void
 ) => {
-  const GCMeetServiceEventEmitter = new NativeEventEmitter(
-    NativeModules.GCMeetService
+  const ECVideoCallsServiceEventEmitter = new NativeEventEmitter(
+    NativeModules.ECVideoCallsService
   );
-  const GCMeetServiceEventListener = GCMeetServiceEventEmitter.addListener(
+  const ECVideoCallsServiceEventListener = ECVideoCallsServiceEventEmitter.addListener(
     eventName,
     handler
   );
-  return GCMeetServiceEventListener.remove;
+  return ECVideoCallsServiceEventListener.remove;
 };
 
 interface ViewProps extends PropsWithChildren<any> {
   style: StyleProp<ViewStyle>;
 }
 
-export const GCRemoteView = requireNativeComponent<ViewProps>('GCRemoteView');
-export const GCLocalView = requireNativeComponent<ViewProps>('GCLocalView');
+export const ECRemoteView = requireNativeComponent<ViewProps>('ECRemoteView');
+export const ECLocalView = requireNativeComponent<ViewProps>('ECLocalView');

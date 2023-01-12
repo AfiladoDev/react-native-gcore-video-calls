@@ -4,13 +4,13 @@ import android.util.Log
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
-import gcore.videocalls.meet.ui.view.me.LocalVideoTextureView
+import world.edgecenter.videocalls.ui.view.me.LocalVideoTextureView
 
-class GCLocalViewManager(var mCallerContext: ReactApplicationContext) :
+class ECLocalViewManager(var mCallerContext: ReactApplicationContext) :
   SimpleViewManager<LocalVideoTextureView>() {
 
   override fun getName(): String {
-    return "GCLocalView"
+    return "ECLocalView"
   }
 
   override fun onDropViewInstance(view: LocalVideoTextureView) {

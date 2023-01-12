@@ -9,13 +9,13 @@ class MyAppPackage(private val application: Application) : ReactPackage {
 
   override fun createNativeModules(
     reactContext: ReactApplicationContext
-  ): MutableList<NativeModule> = listOf(GCMeetService(reactContext, application)).toMutableList()
+  ): MutableList<NativeModule> = listOf(ECVideoCallsService(reactContext, application)).toMutableList()
 
   override fun createViewManagers(
     reactContext: ReactApplicationContext
   ) = listOf(
-    GCRemoteViewManager(reactContext),
-    GCLocalViewManager(reactContext),
+    ECRemoteViewManager(reactContext),
+    ECLocalViewManager(reactContext),
   ).toMutableList()
 
 }
