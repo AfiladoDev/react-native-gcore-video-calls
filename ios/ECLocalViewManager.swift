@@ -1,10 +1,10 @@
 import Foundation
 
-@objc(GCLocalViewManager)
-class GCLocalViewManager: RCTViewManager {
+@objc(ECLocalViewManager)
+class ECLocalViewManager: RCTViewManager {
 
   override func view() -> UIView! {
-    return GCViewsEnum.local
+    return ECViewsEnum.local
   }
 
   @objc override static func requiresMainQueueSetup() -> Bool {

@@ -1,7 +1,8 @@
 import Foundation
+import AVFoundation
 
-@objc(GCMeetPermissions)
-class GCMeetPermissions: NSObject {
+@objc(ECVideoCallsPermissions)
+class ECVideoCallsPermissions: NSObject {
     @objc
     func authorizeForVideo(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {

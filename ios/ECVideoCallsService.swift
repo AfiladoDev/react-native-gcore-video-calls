@@ -1,7 +1,8 @@
 import Foundation
-import GCoreVideoCallsSDK
+import EdgeCenterVideoCallsSDK
 import WebRTC
 import React
+import EdgeCenterVideoBufferHandler
 
 struct ConnectionOptions {
     var isVideoOn = false
@@ -13,10 +14,11 @@ struct ConnectionOptions {
 }
 
 
-@objc(GCMeetService)
-class GCMeetService: RCTEventEmitter {
+@objc(ECVideoCallsService)
+class ECVideoCallsService: RCTEventEmitter {
 
-    private var client = GCoreMeet.shared
+    private let bufferHandler = ECBufferHandler()
+    private var client = ECSession.shared
     private var joinOptions: ConnectionOptions!
 
     override func supportedEvents() -> [String]! {
@@ -25,28 +27,29 @@ class GCMeetService: RCTEventEmitter {
 
     @objc
     func openConnection(_ options: NSDictionary) {
-        GCoreRoomLogger.activateLogger()
+        ECRoomLogger.activateLogger()
 
-        client.cameraParams = GCoreCameraParams(cameraPosition: .front)
+        client.cameraParams = ECCameraParams(cameraPosition: .front)
 
-        var userRole: GCoreUserRole
+        var userRole: ECUserRole
         if let role = options["role"] {
             switch role as! String {
             case "common": userRole = .common
             case "moderator": userRole = .moderator
+            case "participant": userRole = .participant
             default: userRole = .unknown
           }
         } else {
             userRole = .unknown
         }
 
-        let localUserParams = GCoreLocalUserParams(
+        let localUserParams = ECLocalUserParams(
             name: options["displayName"] as! String,
             id: options["userId"] as? String,
             role: userRole)
 
-        let roomParams = GCoreRoomParams(
-            id: options["roomId"] as! String,
+        let roomParams = ECRoomParams(
+            id: options["roomId"] as! String),
             host: options["clientHostName"] as? String)
 
         client.connectionParams = (localUserParams, roomParams)
@@ -60,19 +63,23 @@ class GCMeetService: RCTEventEmitter {
         try? client.startConnection()
         client.audioSessionActivate()
         client.roomListener = self
-    }
 
-    @objc
-    func enableBlur() {
+        bufferHandler.setBlurRadius(joinOptions.blurSigma)
+        bufferHandler.mode = .detectFaceAndBlur
         client.webrtcBufferDelegate = self
-        print("blur on")
     }
 
-    @objc
-    func disableBlur() {
-        client.webrtcBufferDelegate = nil
-        print("blur off")
-    }
+//     @objc
+//     func enableBlur() {
+//         client.webrtcBufferDelegate = self
+//         print("blur on")
+//     }
+//
+//     @objc
+//     func disableBlur() {
+//         client.webrtcBufferDelegate = nil
+//         print("blur off")
+//     }
 
     @objc
     func closeConnection() {
@@ -132,29 +139,36 @@ class GCMeetService: RCTEventEmitter {
     }
 }
 
-extension GCMeetService: MediaCapturerBufferDelegate {
-  func mediaCapturerDidBuffer(_ pixelBuffer: CVPixelBuffer) {
-      let ciimage = CIImage(cvPixelBuffer: pixelBuffer).applyingGaussianBlur(sigma: self.joinOptions.blurSigma)
-      CIContext().render(ciimage, to: pixelBuffer)
-      print("blured with sigma: ", self.joinOptions.blurSigma)
-  }
+extension ECVideoCallsService: MediaCapturerBufferDelegate {
+ func mediaCapturerDidBuffer(_ pixelBuffer: CVPixelBuffer) {
+   bufferHandler.proccessBuffer(pixelBuffer)
+ }
 }
 
 
-extension GCMeetService: GCoreRoomListener {
-    func roomClient(_ client: GCoreRoomClient, waitingRoomIsActive: Bool) {
+extension ECVideoCallsService: ECRoomListener {
+    func roomClient(_ client: ECRoomClient, waitingRoomIsActive: Bool) {
 
     }
 
-    func roomClient(_ client: GCoreRoomClient, captureSession: AVCaptureSession, captureDevice: AVCaptureDevice) {
-
+    func roomClient(_ client: ECRoomClient, captureSession: AVCaptureSession, captureDevice: AVCaptureDevice) {
+        guard let videoOutput = captureSession.outputs.first(where: { $0 is AVCaptureVideoDataOutput }) as? AVCaptureVideoDataOutput else {
+          return
+        }
+        videoOutput.alwaysDiscardsLateVideoFrames = true
     }
 
-    func roomClientHandle(error: GCoreRoomError) {
+    func roomClientHandle(error: ECRoomError) {
+        if case .fatalError(let error) = error {
+          switch error {
+          case HTTPUpgradeError.notAnUpgrade(502):
+            try? client.startConnection()
+          default: break
+          }
+        }
+      }
 
-    }
-
-    func roomClientHandle(_ client: GCoreRoomClient, forAllRoles joinData: GCoreJoinData) {
+    func roomClientHandle(_ client: ECRoomClient, forAllRoles joinData: ECJoinData) {
         switch joinData {
 
         case .permissions(mediaStreams: let mediaStreams):
@@ -168,7 +182,7 @@ extension GCMeetService: GCoreRoomListener {
         }
     }
 
-    func roomClientHandle(_ client: GCoreRoomClient, remoteUsersEvent: GCoreRemoteUsersEvent) {
+    func roomClientHandle(_ client: ECRoomClient, remoteUsersEvent: ECRemoteUsersEvent) {
         switch remoteUsersEvent {
 
         case .handleRemote(user: let user):
@@ -186,34 +200,34 @@ extension GCMeetService: GCoreRoomListener {
         }
     }
 
-    func roomClientHandle(_ client: GCoreRoomClient, mediaEvent: GCoreMediaEvent) {
+    func roomClientHandle(_ client: ECRoomClient, mediaEvent: ECMediaEvent) {
         switch mediaEvent {
 
         case .produceLocalVideo(track: let track):
             print("RoomListener: produceLocalVideoTrack:", track)
             DispatchQueue.main.async {
-                track.add(GCViewsEnum.local)
+                track.add(ECViewsEnum.local)
             }
         case .produceLocalAudio(track: let track):
             print("produceLocalAudio: ", track)
         case .didCloseLocalVideo(track: let track):
             print("didCloseLocalVideo: ", track ?? "nil")
             DispatchQueue.main.async {
-                track?.remove(GCViewsEnum.local)
+                track?.remove(ECViewsEnum.local)
             }
         case .didCloseLocalAudio(track: let track):
             print("didCloseLocalAudio: ", track ?? "nil")
         case .handledRemoteVideo(videoObject: let videoObject):
             print("RoomListener: handledRemoteVideoTrack:", videoObject)
             DispatchQueue.main.async {
-                videoObject.rtcVideoTrack.add(GCViewsEnum.remote)
+                videoObject.rtcVideoTrack.add(ECViewsEnum.remote)
             }
         case .produceRemoteAudio(audioObject: let audioObject):
             print("produceRemoteAudio: ", audioObject)
         case .didCloseRemoteVideo(byModerator: let byModerator, videoObject: let videoObject):
             print("didCloseRemoteVideo: ", byModerator, videoObject)
             DispatchQueue.main.async {
-                videoObject.rtcVideoTrack.remove(GCViewsEnum.remote)
+                videoObject.rtcVideoTrack.remove(ECViewsEnum.remote)
             }
         case .didCloseRemoteAudio(byModerator: let byModerator, audioObject: let audioObject):
             print("didCloseRemoteAudio: ", byModerator, audioObject)
@@ -228,7 +242,7 @@ extension GCMeetService: GCoreRoomListener {
         }
     }
 
-    func roomClientHandle(_ client: GCoreRoomClient, connectionEvent: GCoreRoomConnectionEvent) {
+    func roomClientHandle(_ client: ECRoomClient, connectionEvent: ECRoomConnectionEvent) {
 
         sendEvent(withName: "onConnectionChanged", body: ["connection": String(describing: connectionEvent)])
         switch connectionEvent {

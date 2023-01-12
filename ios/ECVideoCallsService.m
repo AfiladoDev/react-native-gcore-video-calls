@@ -1,7 +1,7 @@
 #import <React/RCTBridgeModule.h>
 #import <React/RCTEventEmitter.h>
 
-@interface RCT_EXTERN_MODULE(GCMeetService, RCTEventEmitter)
+@interface RCT_EXTERN_MODULE(ECVideoCallsService, RCTEventEmitter)
     RCT_EXTERN_METHOD(openConnection: (NSDictionary*)roomOptions)
     RCT_EXTERN_METHOD(closeConnection)
     RCT_EXTERN_METHOD(toggleVideo: BOOL)
