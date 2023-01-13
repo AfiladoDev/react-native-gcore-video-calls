@@ -1,6 +1,10 @@
 package com.reactnativeawesomemodule
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import com.facebook.react.bridge.*
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.facebook.react.bridge.ReactApplicationContext
@@ -22,7 +26,7 @@ import world.edgecenter.videocalls.utils.image.VideoFrameFaceDetector
 
 
 class ECVideoCallsService(
-  reactContext: ReactApplicationContext,
+  private val reactContext: ReactApplicationContext,
   private val application: Application,
 ) : ReactContextBaseJavaModule(reactContext) {
 
@@ -133,7 +137,7 @@ class ECVideoCallsService(
     // Set up any upstream listeners or background tasks as necessary
     Log.d("qwe", eventName)
     Handler(Looper.getMainLooper()).post {
-      GCoreMeet.instance.roomState.remoteUsers.observeForever { remoteUsers ->
+      ECSession.instance.roomState.remoteUsers.observeForever { remoteUsers ->
         remoteUsers?.list?.let { users ->
           if (users.isNotEmpty()) {
             Log.d("qwe", eventName + " " + users[0].id)
