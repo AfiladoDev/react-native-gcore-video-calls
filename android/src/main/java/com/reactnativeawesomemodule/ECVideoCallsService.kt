@@ -7,6 +7,12 @@ import android.util.Log
 import com.facebook.react.bridge.*
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.util.SparseIntArray
+import android.view.Surface
+import android.content.Context.CAMERA_SERVICE
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -23,6 +29,7 @@ import world.edgecenter.videocalls.room.RoomParams
 import world.edgecenter.videocalls.utils.Utils
 import world.edgecenter.videocalls.utils.image.VideoFrameConverter
 import world.edgecenter.videocalls.utils.image.VideoFrameFaceDetector
+import world.edgecenter.videocalls.logger.LLog
 
 
 class ECVideoCallsService(
@@ -31,25 +38,83 @@ class ECVideoCallsService(
 ) : ReactContextBaseJavaModule(reactContext) {
 
   private var lastPeer: String? = null
+  private val ORIENTATIONS = SparseIntArray()
+
+  init {
+    ORIENTATIONS.append(Surface.ROTATION_0, 0)
+    ORIENTATIONS.append(Surface.ROTATION_90, 90)
+    ORIENTATIONS.append(Surface.ROTATION_180, 180)
+    ORIENTATIONS.append(Surface.ROTATION_270, 270)
+  }
+
+  /**
+   * Get the angle by which an image must be rotated given the device's current
+   * orientation.
+   */
+  @Throws(CameraAccessException::class)
+  private fun getRotationCompensation(cameraId: String): Int {
+    // Get the device's current rotation relative to its "native" orientation.
+    // Then, from the ORIENTATIONS table, look up the angle the image must be
+    // rotated to compensate for the device's rotation.
+    val deviceRotation = currentActivity?.windowManager?.defaultDisplay?.rotation
+
+    var rotationCompensation = ORIENTATIONS.get(deviceRotation ?: 0)
+
+    // Get the device's sensor orientation.
+    val cameraManager = application.getSystemService(CAMERA_SERVICE) as CameraManager
+    val sensorOrientation =
+      cameraManager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION)!!
+
+    val isFrontFacing = Utils.isFrontFacingCamera(cameraId)
+
+    rotationCompensation = if (isFrontFacing) {
+      (sensorOrientation + rotationCompensation) % 360
+    } else {
+      (sensorOrientation - rotationCompensation + 360) % 360
+    }
+
+    LLog.d(
+      "ECVideoCallsService",
+      "isFrontFacing $isFrontFacing " +
+        "\nsensorOrientation $sensorOrientation " +
+        "\ndeviceRotation $deviceRotation " +
+        "\nrotationCompensation $rotationCompensation"
+    )
+    return rotationCompensation
+  }
+
+  /**
+   * Get the angle by which an image must be rotated given the device's current
+   * orientation.
+   */
 
   private val frameConverter = VideoFrameConverter()
   private val videoFrameFaceDetector = VideoFrameFaceDetector().also {
-    it.faceDetectingFrameInterval = 10
+    it.faceDetectingFrameInterval = 30
   }
 
   private val videoFrameListener = object : VideoFrameListener {
 
     override fun onFrameCaptured(frame: VideoFrame, sink: (frame: VideoFrame) -> Unit) {
-        val inputImage = frameConverter.frameToInputImage(frame, frame.rotation)
-        val hasFace = videoFrameFaceDetector.hasFace(inputImage)
 
-        val blurredFrame = if (hasFace) {
-          frame
-        } else {
-          frameConverter.blurFrame(frame, 40)
+      val getInputImage = getInputImage@{ ->
+        val cameraName = Utils.getCameraName()
+        val angle = cameraName?.let {
+          getRotationCompensation(it)
         }
 
-        sink.invoke(blurredFrame)
+        return@getInputImage frameConverter.frameToInputImage(frame, angle ?: 0)
+      }
+
+      val hasFace = videoFrameFaceDetector.hasFace(getInputImage)
+
+      val outputFrame = if (hasFace) {
+        frame
+      } else {
+        frameConverter.blurFrame(frame, 40)
+      }
+
+      sink.invoke(outputFrame)
     }
   }
 
@@ -115,7 +180,8 @@ class ECVideoCallsService(
         hostName = options.getString("clientHostName") ?: "",
         startWithCam = options.getBoolean("isVideoOn"),
         startWithMic = options.getBoolean("isAudioOn"),
-        isWebinar = false
+        isWebinar = options.getBoolean("isWebinar") ?: false,
+        apiEvent = options.getString("apiEvent") ?: ""
       )
 
       ECSession.instance.setConnectionParams(userInfo, roomParams)
