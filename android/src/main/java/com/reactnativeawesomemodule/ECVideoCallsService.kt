@@ -180,7 +180,7 @@ class ECVideoCallsService(
         hostName = options.getString("clientHostName") ?: "",
         startWithCam = options.getBoolean("isVideoOn"),
         startWithMic = options.getBoolean("isAudioOn"),
-        isWebinar = options.getBoolean("isWebinar") ?: false,
+        isWebinar = options.getBoolean("isWebinar"),
         apiEvent = options.getString("apiEvent") ?: ""
       )
 
