@@ -5,13 +5,12 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.facebook.react.bridge.*
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.hardware.Camera
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
-import android.util.SparseIntArray
-import android.view.Surface
+import android.hardware.camera2.CameraMetadata
+import android.provider.Settings
 import android.content.Context.CAMERA_SERVICE
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -39,19 +38,20 @@ class ECVideoCallsService(
 
   private var lastPeer: String? = null
   private val frameConverter = VideoFrameConverter()
-  private val videoFrameFaceDetector = VideoFrameFaceDetector().also {
-    it.faceDetectingFrameInterval = 30
-  }
+  private val orientationHelper = OrientationHelper(application)
+  private val videoFrameFaceDetector = VideoFrameFaceDetector(initialHasFace = false, faceDetectingFrameInterval = 30)
 
   private val videoFrameListener = object : VideoFrameListener {
 
     override fun onFrameCaptured(frame: VideoFrame, sink: (frame: VideoFrame) -> Unit) {
 
-      val getInputImage = getInputImage@{ ->
-        return@getInputImage frameConverter.frameToInputImage(frame, frame.rotation)
-      }
+      val orientation = if (isAutoRotationEnabled()) {
+              frame.rotation
+            } else {
+              getRotationCompensation(Utils.getCameraId()!!)
+            }
 
-      val hasFace = videoFrameFaceDetector.hasFace(getInputImage)
+      val hasFace = videoFrameFaceDetector.hasFace(frame, orientation)
 
       val outputFrame = if (hasFace) {
         frame
@@ -64,7 +64,7 @@ class ECVideoCallsService(
   }
 
   init {
-
+    orientationHelper.enable()
     runOnUiThread {
       ECSession.instance.init(application)
     }
@@ -137,6 +137,50 @@ class ECVideoCallsService(
   override fun getName(): String {
       return "ECVideoCallsService"
   }
+
+  @Throws(CameraAccessException::class)
+  private fun getRotationCompensation(cameraId: Int): Int {
+    // Get the device's sensor orientation.
+    val cameraManager = application.getSystemService(CAMERA_SERVICE) as CameraManager
+
+    val characteristics = cameraManager.getCameraCharacteristics(cameraManager.cameraIdList[cameraId])
+
+    val sensorOrientation =
+      if (characteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL) == CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
+        // Camera1
+//        LLog.d("ECVideoCallsService", "getting sensorOrientation for Camera1")
+        val cameraInfo = Camera.CameraInfo()
+        Camera.getCameraInfo(cameraId, cameraInfo)
+        cameraInfo.orientation
+      } else {
+        // Camera2
+//        LLog.d("ECVideoCallsService", "getting sensorOrientation for Camera2")
+        characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+      }
+
+    val isFrontFacing = Utils.isFrontFacingCamera(cameraId)
+
+    val deviceOrientation = orientationHelper.getOrientation()
+
+    val rotationCompensation = if (!isFrontFacing) {
+      (sensorOrientation + deviceOrientation) % 360
+    } else {
+      (sensorOrientation - deviceOrientation + 360) % 360
+    }
+
+//    LLog.d(
+//      "ECVideoCallsService",
+//      "isFrontFacing $isFrontFacing \nsensorOrientation $sensorOrientation \ndeviceOrientation $deviceOrientation \nrotationCompensation $rotationCompensation"
+//    )
+    return rotationCompensation
+  }
+
+  private fun isAutoRotationEnabled(): Boolean {
+    return Settings.System.getInt(
+      application.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0
+    ) == 1
+  }
+
   private fun sendEvent(reactContext: ReactContext, eventName: String, params: String?) {
     reactContext
       .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
