@@ -117,7 +117,7 @@ class ECVideoCallsService(
       val userInfo = LocalUserInfo(
         displayName = options.getString("displayName") ?: "User${Utils.getRandomString(3)}",
         role = userRole,
-        userId = options.getString("userId") ?: Utils.getRandomString(DEFAULT_LENGTH_RANDOM_STRING)
+        id = options.getString("userId") ?: Utils.getRandomString(DEFAULT_LENGTH_RANDOM_STRING)
       )
 
       val roomParams = RoomParams(
