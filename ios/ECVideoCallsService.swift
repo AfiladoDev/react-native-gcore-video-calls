@@ -2,7 +2,6 @@ import Foundation
 import EdgeCenterVideoCallsSDK
 import WebRTC
 import React
-import EdgeCenterVideoBufferHandler
 
 struct ConnectionOptions {
     var isVideoOn = false
