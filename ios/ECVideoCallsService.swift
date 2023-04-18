@@ -9,7 +9,6 @@ struct ConnectionOptions {
     var roomId = ""
     var displayName = ""
     var clientHostName = ""
-    var blurSigma: Double = 10
 }
 
 
@@ -50,36 +49,32 @@ class ECVideoCallsService: RCTEventEmitter {
         let roomParams = ECRoomParams(
           id: options["roomId"] as! String,
           host: options["clientHostName"] as? String,
+          startWithCam: options["isVideoOn"] as! Bool,
+          startWithMic: options["isAudioOn"] as! Bool,
           apiEvent: options["apiEvent"] as? String)
 
         client.connectionParams = (localUserParams, roomParams)
-
-        joinOptions = ConnectionOptions(
-            isVideoOn: options["isVideoOn"] as! Bool,
-            isAudioOn: options["isAudioOn"] as! Bool,
-            blurSigma: options["blurSigma"] as! Double
-        )
 
         try? client.startConnection()
         client.audioSessionActivate()
         client.roomListener = self
 
-        bufferHandler.setBlurRadius(joinOptions.blurSigma)
+        bufferHandler.setBlurRadius(35)
         bufferHandler.mode = .detectFaceAndBlur
         client.webrtcBufferDelegate = self
     }
 
-//     @objc
-//     func enableBlur() {
-//         client.webrtcBufferDelegate = self
-//         print("blur on")
-//     }
-//
-//     @objc
-//     func disableBlur() {
-//         client.webrtcBufferDelegate = nil
-//         print("blur off")
-//     }
+    @objc
+    func enableBlur() {
+        client.webrtcBufferDelegate = self
+        print("blur on")
+    }
+
+    @objc
+    func disableBlur() {
+        client.webrtcBufferDelegate = nil
+        print("blur off")
+    }
 
     @objc
     func closeConnection() {
@@ -204,41 +199,41 @@ extension ECVideoCallsService: ECRoomListener {
         switch mediaEvent {
 
         case .produceLocalVideo(track: let track):
-            print("RoomListener: produceLocalVideoTrack:", track)
+            print("RoomListener1: produceLocalVideoTrack:", track)
             DispatchQueue.main.async {
                 track.add(ECViewsEnum.local)
             }
         case .produceLocalAudio(track: let track):
-            print("produceLocalAudio: ", track)
+            print("RoomListener1: produceLocalAudio: ", track)
         case .didCloseLocalVideo(track: let track):
-            print("didCloseLocalVideo: ", track ?? "nil")
+            print("RoomListener1: didCloseLocalVideo: ", track ?? "nil")
             DispatchQueue.main.async {
                 track?.remove(ECViewsEnum.local)
             }
         case .didCloseLocalAudio(track: let track):
-            print("didCloseLocalAudio: ", track ?? "nil")
+            print("RoomListener1: didCloseLocalAudio: ", track ?? "nil")
         case .handledRemoteVideo(videoObject: let videoObject):
-            print("RoomListener: handledRemoteVideoTrack:", videoObject)
+            print("RoomListener1: handledRemoteVideoTrack:", videoObject)
             DispatchQueue.main.async {
                 videoObject.rtcVideoTrack.add(ECViewsEnum.remote)
             }
         case .produceRemoteAudio(audioObject: let audioObject):
-            print("produceRemoteAudio: ", audioObject)
+            print("RoomListener1: produceRemoteAudio: ", audioObject)
         case .didCloseRemoteVideo(byModerator: let byModerator, videoObject: let videoObject):
-            print("didCloseRemoteVideo: ", byModerator, videoObject)
+            print("RoomListener1: didCloseRemoteVideo: ", byModerator, videoObject)
             DispatchQueue.main.async {
                 videoObject.rtcVideoTrack.remove(ECViewsEnum.remote)
             }
         case .didCloseRemoteAudio(byModerator: let byModerator, audioObject: let audioObject):
-            print("didCloseRemoteAudio: ", byModerator, audioObject)
+            print("RoomListener1: didCloseRemoteAudio: ", byModerator, audioObject)
         case .togglePermissionsByModerator(kind: let kind, status: let status):
-            print("togglePermissionsByModerator: ", kind, status)
+            print("RoomListener1: togglePermissionsByModerator: ", kind, status)
         case .acceptedPermission(kind: let kind):
-            print("acceptedPermission: ", kind)
+            print("RoomListener1: acceptedPermission: ", kind)
         case .disableProducerByModerator(media: let media):
-            print("disableProducerByModerator: ", media)
+            print("RoomListener1: disableProducerByModerator: ", media)
         default:
-            print("default")
+            print("RoomListener1: default")
         }
     }
 
@@ -248,37 +243,25 @@ extension ECVideoCallsService: ECRoomListener {
         switch connectionEvent {
 
         case .startToConnectWithServices:
-            print("startToConnectWithServices")
+            print("RoomListener2: startToConnectWithServices")
         case .successfullyConnectWithServices:
-            print("successfullyConnectWithServices")
+            print("RoomListener2: successfullyConnectWithServices")
         case .didConnected:
-            print("RoomListener: roomClientDidConnected")
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                if self.joinOptions.isVideoOn {
-                    self.toggleVideo(self.joinOptions.isVideoOn)
-                    print("toggleVideo joined: ", self.joinOptions.isVideoOn)
-                }
-
-                if self.joinOptions.isAudioOn {
-                    self.toggleAudio(self.joinOptions.isAudioOn)
-                    print("toggleAudio joined: ", self.joinOptions.isAudioOn)
-                }
-            }
+            print("RoomListener2: roomClientDidConnected")
         case .reconnecting:
-            print("reconnecting")
+            print("RoomListener2: reconnecting")
         case .reconnectingFailed:
-            print("reconnectingFailed")
+            print("RoomListener2: reconnectingFailed")
         case .socketDidDisconnected:
-            print("socketDidDisconnected")
+            print("RoomListener2: socketDidDisconnected")
         case .waitingForModeratorJoinAccept:
-            print("waitingForModeratorJoinAccept")
+            print("RoomListener2: waitingForModeratorJoinAccept")
         case .moderatorRejectedLocalJoinRequest:
-            print("moderatorRejectedLocalJoinRequest")
+            print("RoomListener2: moderatorRejectedLocalJoinRequest")
         case .removedByModerator:
-            print("removedByModerator")
+            print("RoomListener2: removedByModerator")
         default:
-            print("default")
+            print("RoomListener2: default")
         }
     }
 }
