@@ -49,9 +49,9 @@ class ECVideoCallsService: RCTEventEmitter {
         let roomParams = ECRoomParams(
           id: options["roomId"] as! String,
           host: options["clientHostName"] as? String,
+          apiEvent: options["apiEvent"] as? String,
           startWithCam: options["isVideoOn"] as! Bool,
-          startWithMic: options["isAudioOn"] as! Bool,
-          apiEvent: options["apiEvent"] as? String)
+          startWithMic: options["isAudioOn"] as! Bool)
 
         client.connectionParams = (localUserParams, roomParams)
 
