@@ -220,12 +220,12 @@ extension ECVideoCallsService: ECRoomListener {
         case .produceRemoteAudio(audioObject: let audioObject):
             print("RoomListener1: produceRemoteAudio: ", audioObject)
         case .didCloseRemoteVideo(byModerator: let byModerator, videoObject: let videoObject):
-            print("RoomListener1: didCloseRemoteVideo: ", byModerator, videoObject)
+            print("RoomListener1: didCloseRemoteVideo: ", "byModerator", "videoObject")
             DispatchQueue.main.async {
                 videoObject.rtcVideoTrack.remove(ECViewsEnum.remote)
             }
         case .didCloseRemoteAudio(byModerator: let byModerator, audioObject: let audioObject):
-            print("RoomListener1: didCloseRemoteAudio: ", byModerator, audioObject)
+            print("RoomListener1: didCloseRemoteAudio: ", "byModerator", "audioObject")
         case .togglePermissionsByModerator(kind: let kind, status: let status):
             print("RoomListener1: togglePermissionsByModerator: ", kind, status)
         case .acceptedPermission(kind: let kind):
